@@ -200,18 +200,20 @@ public class RCTAes extends ReactContextBaseJavaModule {
         return Base64.encodeToString(encrypted, Base64.NO_WRAP);
     }
 
-    private static String decrypt(String ciphertext, String hexKey, String hexIv) throws Exception {
+    private static String decrypt(String data, String key, String iv) throws Exception {
         if(ciphertext == null || ciphertext.length() == 0) {
             return null;
         }
 
-        byte[] key = Hex.decode(hexKey);
-        SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
-
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
-        byte[] decrypted = cipher.doFinal(Base64.decode(ciphertext, Base64.NO_WRAP));
-        return new String(decrypted, "UTF-8");
+        byte[] encryptionKey = new byte[32];
+        byte[] ivKey = new byte[16];
+        System.arraycopy(Base64.decode(key.getBytes("UTF-8"), Base64.DEFAULT), 0, encryptionKey, 0, 32);
+        System.arraycopy(Base64.decode(iv.getBytes("UTF-8"), Base64.DEFAULT), 0, ivKey, 0, 16);
+        SecretKeySpec sKey = new SecretKeySpec(encryptionKey, "AES");
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, sKey, new IvParameterSpec(ivKey));
+        byte[] clearByte = cipher.doFinal(Base64.decode(data.getBytes(), Base64.DEFAULT));
+        return new String(clearByte);
     }
 
 }
